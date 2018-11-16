@@ -1,8 +1,9 @@
-﻿Shader "Hidden/CRTScanline"
+﻿Shader "FX/CRTScanline"
 {
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}
+		[Toggle(USE_SCANLINES)] _isScanLinesEnabled("Use Scanlines", Float) = 0
 	}
 	SubShader
 	{
@@ -15,6 +16,7 @@
 			#pragma vertex vert
 			#pragma fragment frag
 
+			#pragma shader_feature USE_SCANLINES
 
 			#define pi        3.14159265358
 			#define normalGauss(x) ((exp(-(x)*(x)*0.5))/sqrt(2.0*pi))
@@ -41,17 +43,17 @@
 				return o;
 			}
 
-			float signalResolution=256.0;
-			float signalResolutionI=83.0;
-			float signalResolutionQ=25.0;
+			uniform float signalResolution;
+			uniform float signalResolutionI;
+			uniform float signalResolutionQ;
 
-			float2 videoSize = float2(256.0, 240.0);
-			float2 textureSize = float2(256.0, 240.0);
-			float2 outputSize = float2(256.0, 240.0);
+			uniform float2 videoSize;
+			uniform float2 textureSize;
+			uniform float2 outputSize;
 
-			float blackLevel = 0.0875;
-			float contrast=1.0;
-			float tvVerticalResolution=240.0;
+			uniform float blackLevel;
+			uniform float contrast;
+			uniform float tvVerticalResolution;
 			
 			sampler2D _MainTex;
 
@@ -76,12 +78,6 @@
 				return c;
 			}
 
-			#define Y(j) (offset.y-(j))
-			#define SOURCE(j) float2(texCoord.x,texCoord.y - Y(j)/textureSize.y)
-			#define C(j) (COMPAT_Sample(decal, SOURCE(j)).xyz)
-			#define VAL(j) (C(j)*STU(Y(j),(tvVerticalResolution/videoSize.y)))
-			#define VAL_scanlines(j) (scanlines(Y(j),C(j), videoSize, outputSize))
-
 			float d(float x, float b)
 			{
 				return pi*b*min(abs(x)+0.5,1.0/b);
@@ -100,21 +96,39 @@
 
 			fixed4 frag (v2f i) : SV_Target
 			{
-				float2 videoSize = float2(256.0, 240.0);
-				float2 textureSize = float2(256.0, 240.0);
-				float2 offset = frac((i.uv.xy * textureSize.xy) - 0.5);
-				float3 tempColor = float3(0,0,0);
+
+				signalResolution=256.0;
+				signalResolutionI=83.0;
+				signalResolutionQ=25.0;
+
+				videoSize = float2(256.0, 240.0);
+				textureSize = float2(256.0, 240.0);
+				outputSize = float2(256.0, 240.0);
+
+				blackLevel = 0.0875;
+				contrast=1.0;
+				tvVerticalResolution=240.0;
+
+				float2 offset=frac((i.uv.xy*textureSize.xy)-0.5);
+				float3 tempColor=float3(0.0,0.0,0.0);
 				float3 Cj;
-				float range=ceil(0.5+videoSize.y/250.0);
+				float range=ceil(0.5+videoSize.y/tvVerticalResolution);
 
+				#ifdef USE_SCANLINES
 				for(float itr=-range;itr<range+2.0;itr++) {
-					Cj=tex2D(_MainTex, float2(i.uv.x,i.uv.y - (offset.y-(itr))/textureSize.y)).rgb;
-					tempColor+=scanlines(offset.y -(itr), Cj, videoSize, outputSize);
+					Cj = tex2D(_MainTex, float2(i.uv.x,i.uv.y - (offset.y-(itr))/textureSize.y)).rgb;
+					tempColor+=scanlines(offset.y-(itr), Cj, videoSize, outputSize);
 				}
+				#else
+				for(float itr=-range;itr<range+2.0;itr++) {
+					Cj = tex2D(_MainTex, float2(i.uv.x,i.uv.y - (offset.y-(itr))/textureSize.y)).rgb;
+					tempColor+=Cj*STU(offset.y-(itr),(tvVerticalResolution/videoSize.y));
+				}
+				#endif
 
-				tempColor-=float3(blackLevel, blackLevel, blackLevel);
-				tempColor*=(contrast/float3(1.0-blackLevel,1.0-blackLevel,1.0-blackLevel));
-				
+				tempColor -= float3(blackLevel, blackLevel,blackLevel);
+				tempColor *= (contrast/float3(1.0-blackLevel, 1.0-blackLevel, 1.0-blackLevel));
+
 				return fixed4(tempColor, 1.0);
 			}
 

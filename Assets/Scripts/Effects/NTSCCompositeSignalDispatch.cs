@@ -4,7 +4,6 @@ using UnityEngine;
 
 
 [RequireComponent(typeof(Camera))]
-[ExecuteInEditMode]
 public class NTSCCompositeSignalDispatch : MonoBehaviour 
 {
     public Material material;
@@ -23,6 +22,7 @@ public class NTSCCompositeSignalDispatch : MonoBehaviour
 
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
+        var hasSignal = material.GetFloat("signalResolution");
         Graphics.Blit(source, destination, material);
     }
 }
