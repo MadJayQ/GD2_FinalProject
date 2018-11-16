@@ -10,12 +10,6 @@
 		// No culling or depth
 		Cull Off ZWrite Off ZTest Always
 
-		GrabPass
-        {
-            "_BackgroundTexture"
-        }
-
-
 		Pass
 		{
 

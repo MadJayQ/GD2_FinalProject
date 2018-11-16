@@ -3,6 +3,7 @@
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}
+		[Toggle(USE_COMPOSITE)] _isCompositeEnabled("Use Composite Signal", Float) = 0
 	}
 	SubShader
 	{
@@ -15,6 +16,8 @@
 
 			#pragma vertex vert
 			#pragma fragment frag
+
+			#pragma shader_feature USE_COMPOSITE
 			
 			#include "UnityCG.cginc"
 
@@ -71,17 +74,24 @@
 				float3 tempColor = float3(0, 0, 0);
 				float X;
 				float3 c;
+				#ifdef USE_COMPOSITE
 				float range=ceil(0.5+videoSize.x/min(min(signalResolution,signalResolutionI),signalResolutionQ));
-				
 				for(float itr=-range;itr<range+2.0;itr++) {
 					X = (offset-(itr));
 					c = tex2D(_MainTex, float2(i.uv.x - X/textureSize.x, i.uv.y)).rgb;
 					tempColor += float3((c.x*STU(X,(signalResolution/videoSize.x))),(c.y*STU(X,(signalResolutionI/videoSize.x))),(c.z*STU(X,(signalResolutionQ/videoSize.x))));
 				}
-
-
 				tempColor=clamp(mul(YIQ_to_RGB, tempColor), 0.0, 1.0);
-				// just invert the colors
+				#else
+				float range=ceil(0.5+videoSize.x/signalResolution);
+				for(float itr=-range;itr<range+2.0;itr++) {
+					X = (offset-(itr));
+					c = tex2D(_MainTex, float2(i.uv.x - X/textureSize.x, i.uv.y)).rgb;
+					tempColor+=float3(c*STU(X,(signalResolution/videoSize.x)));
+				}
+				tempColor=clamp(tempColor,0.0,1.0);
+				#endif
+
 				return float4(tempColor, 1.0);
 			}
 			ENDCG
