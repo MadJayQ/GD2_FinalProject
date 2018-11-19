@@ -42,7 +42,6 @@
 				o.uv = v.uv;
 				return o;
 			}
-			uniform float _signalResoution;
 			uniform float signalResolution;
 			uniform float signalResolutionI;
 			uniform float signalResolutionQ;
@@ -59,7 +58,6 @@
 
 			fixed4 frag (v2f i) : SV_Target
 			{
-				_signalResoution = 999.0;
 				signalResolution=256.0;
 				signalResolutionI=83.0;
 				signalResolutionQ=25.0;

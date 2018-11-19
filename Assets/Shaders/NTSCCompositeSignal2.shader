@@ -77,8 +77,8 @@
 			fixed4 frag (v2f i) : SV_Target
 			{
 				signalResolution=256.0;
-				signalResolutionI=83.0;
-				signalResolutionQ=25.0;
+				signalResolutionI=100.0;
+				signalResolutionQ=80.0;
 
 				videoSize = float2(256.0, 240.0);
 				textureSize = float2(256.0, 240.0);
